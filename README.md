@@ -58,13 +58,7 @@ The script creates the IAM role, packages and deploys the Lambda, configures API
 
 To update only the frontend after changes to `index.html`:
 
-```bash
-aws s3 sync . s3://jimmy-resume-matcher \
-  --profile portfolio-user \
-  --exclude ".git/*" \
-  --exclude "lambda_function.py" \
-  --exclude "deploy.sh"
-```
+Frontend deploys automatically on push to main via GitHub Actions (.github/workflows/deploy.yml) — S3 sync + CloudFront invalidation handled by the workflow.
 
 **S3 bucket (frontend):** `jimmy-resume-matcher` (us-east-1)  
 **S3 bucket (results):** `jimmy-resume-matcher-results` (us-east-1)  
