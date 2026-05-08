@@ -2,7 +2,7 @@
 
 Resume-to-job-description analysis tool powered by Claude — returns a match score, skill gaps, resume highlights, and coaching suggestions.
 
-**Live demo:** https://d3t6z67os7y9is.cloudfront.net
+**Live demo:** https://resume-matcher.jimmyhubbard2.cc
 
 ## Overview
 
