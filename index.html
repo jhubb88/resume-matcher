@@ -714,7 +714,10 @@
     try {
       const submitRes = await fetch(`${API_BASE}/analyze`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': 'MKXvAiav2P4io1ysvw6c66XUruXxy6bN1W6qVaMd'
+        },
         body: JSON.stringify({
           name,
           resume_base64: base64,
