@@ -12,6 +12,13 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -25,10 +32,53 @@ jobs:
           aws s3 sync . s3://jimmy-resume-matcher/ --delete \
             --exclude ".git/*" --exclude ".github/*" \
             --exclude "*.md" --exclude "LICENSE" --exclude ".gitignore" \
-            --exclude "deploy.sh" --exclude "lambda_function.py"
+            --exclude "deploy.sh" --exclude "lambda_function.py" \
+            --exclude "requirements.txt" --exclude "build/*" --exclude "lambda.zip"
 
       - name: Invalidate CloudFront cache
         run: aws cloudfront create-invalidation --distribution-id E3H0XAJDR3BQG1 --paths "/*"
+
+      - name: Check if Lambda code or deps changed
+        id: lambda_diff
+        run: |
+          if [ "$(git rev-list --count HEAD)" -eq 1 ]; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "Initial commit — deploying Lambda"
+          elif git diff --name-only HEAD^ HEAD | grep -qE "^(lambda_function\.py|requirements\.txt)$"; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "Lambda code or requirements changed — deploying Lambda"
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "Lambda code and requirements unchanged — skipping Lambda deploy"
+          fi
+
+      - name: Build and deploy Lambda
+        if: steps.lambda_diff.outputs.changed == 'true'
+        run: |
+          mkdir -p build
+          pip install -r requirements.txt -t build/ --quiet
+          cp lambda_function.py build/
+          cd build
+          zip -rq ../lambda.zip .
+          cd ..
+
+          ZIP_FILE_COUNT=$(unzip -l lambda.zip | tail -1 | awk '{print $2}')
+          echo "Zip contains $ZIP_FILE_COUNT files"
+          if [ "$ZIP_FILE_COUNT" -lt 100 ]; then
+            echo "❌ Build produced suspiciously small package ($ZIP_FILE_COUNT files). Expected ~1900+."
+            exit 1
+          fi
+
+          aws lambda update-function-code \
+            --function-name jimmy-resume-matcher \
+            --zip-file fileb://lambda.zip \
+            --region us-east-1 \
+            --no-cli-pager
+          aws lambda wait function-updated \
+            --function-name jimmy-resume-matcher \
+            --region us-east-1
+
+          rm -rf build lambda.zip
 
       - name: CORS smoke test
         run: |
