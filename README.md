@@ -4,6 +4,8 @@ Resume-to-job-description analysis tool powered by Claude — returns a match sc
 
 **Live demo:** https://resume-matcher.jimmyhubbard2.cc
 
+**Full documentation:** [PROJECT_MASTER.md](./PROJECT_MASTER.md) — architecture, AWS operational reference, build history, and key decisions
+
 ## Overview
 
 The AI Resume Matcher compares a resume against a job description using Claude (claude-sonnet-4-6) and returns a structured analysis report. The frontend submits the job to an AWS Lambda function via API Gateway, then polls for the result while Lambda processes the analysis asynchronously and stores it in S3. Accepts resumes as plain text or PDF.
